@@ -69,12 +69,25 @@ async def create_generate(
 
 @secured.get("/runs", response_model=list[RunOut])
 def list_runs(
-    project_id: int | None = None, db: Session = Depends(get_db)
+    project_id: int | None = None,
+    status: str | None = None,
+    kind: str | None = None,
+    q: str | None = None,
+    db: Session = Depends(get_db),
 ) -> list[Run]:
     query = db.query(Run)
     if project_id is not None:
         query = query.filter(Run.project_id == project_id)
-    return query.order_by(Run.created_at.desc()).limit(100).all()
+    if status:
+        query = query.filter(Run.status == status)
+    if kind:
+        query = query.filter(Run.kind == kind)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            (Run.suite_name.ilike(like)) | (Run.project_key.ilike(like))
+        )
+    return query.order_by(Run.created_at.desc()).limit(200).all()
 
 
 @secured.get("/runs/{run_id}", response_model=RunOut)
@@ -82,6 +95,30 @@ def get_run(run_id: int, db: Session = Depends(get_db)) -> Run:
     run = db.get(Run, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="运行记录不存在")
+    return run
+
+
+@secured.post("/runs/{run_id}/rerun", response_model=RunOut, status_code=201)
+async def rerun(run_id: int, db: Session = Depends(get_db)) -> Run:
+    src = db.get(Run, run_id)
+    if src is None:
+        raise HTTPException(status_code=404, detail="运行记录不存在")
+    project = _project_or_404(db, src.project_id)
+    run = Run(
+        project_id=project.id,
+        project_key=project.key,
+        suite_name=src.suite_name,
+        kind=src.kind,
+        status="pending",
+        ai_mode=src.ai_mode,
+        env=src.env,
+        browser=src.browser,
+        headed=src.headed,
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    asyncio.create_task(execute_run(run.id))
     return run
 
 

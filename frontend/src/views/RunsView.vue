@@ -2,90 +2,135 @@
   <div>
     <div class="page-header">
       <div>
+        <p class="kicker">EXECUTIONS</p>
         <h2 class="page-title">执行记录</h2>
         <p class="page-subtitle">触发测试运行、AI 用例生成，并查看实时日志与历史结果</p>
       </div>
-      <el-button type="primary" :icon="VideoPlay" @click="openRun">运行测试</el-button>
+      <div class="flex gap-10">
+        <el-button :icon="Refresh" @click="loadRuns">刷新</el-button>
+        <el-button type="primary" :icon="VideoPlay" @click="openRun">运行测试</el-button>
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="sum-bar">
+      <button class="sum" :class="{ on: filters.status === '' }" @click="setStatus('')">
+        <span class="sum-n">{{ counts.all }}</span>
+        <span class="sum-l kicker">全部</span>
+      </button>
+      <button class="sum" :class="{ on: filters.status === 'passed' }" @click="setStatus('passed')">
+        <span class="sum-n ok">{{ counts.passed }}</span>
+        <span class="sum-l kicker">通过</span>
+      </button>
+      <button class="sum" :class="{ on: filters.status === 'failed' }" @click="setStatus('failed')">
+        <span class="sum-n danger">{{ counts.failed }}</span>
+        <span class="sum-l kicker">失败</span>
+      </button>
+      <button class="sum" :class="{ on: filters.status === 'running' }" @click="setStatus('running')">
+        <span class="sum-n warn">{{ counts.running }}</span>
+        <span class="sum-l kicker">进行中</span>
+      </button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="searchbox-inline">
+        <el-icon><Search /></el-icon>
+        <input v-model="filters.q" placeholder="搜索用例集 / 项目 Key…" @keyup.enter="loadRuns" />
+      </div>
+      <el-select v-model="filters.kind" placeholder="全部类型" clearable style="width: 130px" @change="loadRuns">
+        <el-option label="测试运行" value="run" />
+        <el-option label="AI 生成" value="generate" />
+      </el-select>
+      <el-select v-model="filters.project_id" placeholder="全部项目" clearable style="width: 170px" @change="loadRuns">
+        <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
+      </el-select>
+      <span class="toolbar-count mono">{{ runs.length }} 条记录</span>
     </div>
 
     <div class="panel-flush" v-loading="loading">
       <el-table :data="runs" @row-click="goDetail" class="clickable">
-        <el-table-column label="#" width="72">
+        <el-table-column label="#" width="62">
           <template #default="{ row }"><span class="mono">{{ row.id }}</span></template>
         </el-table-column>
-        <el-table-column label="类型" width="92">
+        <el-table-column label="类型" width="78">
           <template #default="{ row }">
             <span class="badge" :class="row.kind === 'generate' ? 'warn' : 'info'">
-              {{ row.kind === 'generate' ? '生成' : '运行' }}
+              {{ row.kind === 'generate' ? 'GEN' : 'RUN' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="项目" width="140">
-          <template #default="{ row }"><span class="mono">{{ row.project_key }}</span></template>
+        <el-table-column label="项目" width="120">
+          <template #default="{ row }"><span class="mono proj-key">{{ row.project_key }}</span></template>
         </el-table-column>
         <el-table-column label="用例集" min-width="150">
+          <template #default="{ row }"><span class="mono">{{ row.suite_name || '全部' }}</span></template>
+        </el-table-column>
+        <el-table-column label="环境/浏览器" width="150">
           <template #default="{ row }">
-            <span class="mono">{{ row.suite_name || '全部' }}</span>
+            <span class="muted mono">{{ row.env }} · {{ row.browser }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="环境/浏览器" width="170">
-          <template #default="{ row }">
-            <span class="muted">{{ row.env }} · {{ row.browser }}</span>
-          </template>
+        <el-table-column label="耗时" width="84">
+          <template #default="{ row }"><span class="muted mono">{{ dur(row.duration) }}</span></template>
         </el-table-column>
-        <el-table-column label="状态" width="120">
+        <el-table-column label="状态" width="108">
           <template #default="{ row }">
             <span class="badge" :class="[statusTone(row.status), row.status === 'running' ? 'live' : '']">
               <span class="dot" />{{ statusText(row.status) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="时间" width="170">
+        <el-table-column label="时间" width="150">
+          <template #default="{ row }"><span class="muted">{{ fmt(row.created_at) }}</span></template>
+        </el-table-column>
+        <el-table-column label="" width="64" align="right">
           <template #default="{ row }">
-            <span class="muted">{{ fmt(row.created_at) }}</span>
+            <el-tooltip content="重跑" placement="top">
+              <el-button text circle size="small" :icon="RefreshRight" @click.stop="rerun(row)" />
+            </el-tooltip>
           </template>
         </el-table-column>
         <template #empty>
-          <div class="empty-mini">还没有执行记录，点击右上角「运行测试」开始第一次执行</div>
+          <div class="empty-mini">
+            {{ hasFilters ? '没有符合条件的记录' : '还没有执行记录，点击右上角「运行测试」开始第一次执行' }}
+          </div>
         </template>
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="运行测试" width="520">
-      <el-form :model="runForm" label-width="92px">
-        <el-form-item label="项目">
-          <el-select v-model="runForm.project_id" style="width: 100%" @change="onProjectChange">
-            <el-option
-              v-for="p in projects"
-              :key="p.id"
-              :label="`${p.name} (${p.key})`"
-              :value="p.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="用例集">
-          <el-select v-model="runForm.suite_name" clearable placeholder="留空运行全部" style="width: 100%">
-            <el-option v-for="s in suites" :key="s.id" :label="s.name" :value="s.name" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="环境">
-          <el-select v-model="runForm.env" style="width: 100%">
-            <el-option v-for="e in envOptions" :key="e" :label="e" :value="e" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="AI 模式">
+    <el-dialog v-model="dialogVisible" title="运行测试" width="540">
+      <el-form :model="runForm" label-width="92px" label-position="top">
+        <div class="form-grid">
+          <el-form-item label="项目">
+            <el-select v-model="runForm.project_id" style="width: 100%" @change="onProjectChange">
+              <el-option v-for="p in projects" :key="p.id" :label="`${p.name} (${p.key})`" :value="p.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="用例集">
+            <el-select v-model="runForm.suite_name" clearable placeholder="留空运行全部" style="width: 100%">
+              <el-option v-for="s in suites" :key="s.id" :label="s.name" :value="s.name" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="环境">
+            <el-select v-model="runForm.env" style="width: 100%">
+              <el-option v-for="e in envOptions" :key="e" :label="e" :value="e" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="浏览器">
+            <el-select v-model="runForm.browser" style="width: 100%">
+              <el-option label="chromium" value="chromium" />
+              <el-option label="firefox" value="firefox" />
+              <el-option label="webkit" value="webkit" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-form-item label="AI 定位模式">
           <el-radio-group v-model="runForm.ai_mode">
             <el-radio-button value="strict">strict 严格</el-radio-button>
             <el-radio-button value="assist">assist 辅助</el-radio-button>
             <el-radio-button value="off">off 关闭</el-radio-button>
           </el-radio-group>
-        </el-form-item>
-        <el-form-item label="浏览器">
-          <el-select v-model="runForm.browser" style="width: 100%">
-            <el-option label="chromium" value="chromium" />
-            <el-option label="firefox" value="firefox" />
-            <el-option label="webkit" value="webkit" />
-          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -100,7 +145,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { VideoPlay } from '@element-plus/icons-vue'
+import { VideoPlay, Refresh, RefreshRight, Search } from '@element-plus/icons-vue'
 import api from '../api/client'
 
 const route = useRoute()
@@ -113,6 +158,15 @@ const loading = ref(false)
 const submitting = ref(false)
 const dialogVisible = ref(false)
 
+const filters = reactive({
+  status: '',
+  kind: '',
+  project_id: route.query.project ? Number(route.query.project) : '',
+  q: route.query.q || '',
+})
+
+const counts = reactive({ all: 0, passed: 0, failed: 0, running: 0 })
+
 const runForm = reactive({
   project_id: null,
   suite_name: '',
@@ -120,6 +174,10 @@ const runForm = reactive({
   ai_mode: 'strict',
   browser: 'chromium',
 })
+
+const hasFilters = computed(
+  () => filters.status || filters.kind || filters.project_id || filters.q
+)
 
 const envOptions = computed(() => {
   const p = projects.value.find((x) => x.id === runForm.project_id)
@@ -133,18 +191,46 @@ function statusText(s) {
   return { passed: '通过', failed: '失败', running: '运行中', pending: '排队中' }[s] || s
 }
 function fmt(t) {
-  return t ? new Date(t).toLocaleString('zh-CN') : '—'
+  return t ? new Date(t).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
+}
+function dur(s) {
+  if (s == null) return '—'
+  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`
+  return `${Math.floor(s / 60)}m${Math.round(s % 60)}s`
+}
+
+function setStatus(s) {
+  filters.status = s
+  loadRuns()
 }
 
 async function loadRuns() {
   loading.value = true
   try {
-    const params = route.query.project ? { project_id: route.query.project } : {}
+    const params = {}
+    if (filters.status) params.status = filters.status
+    if (filters.kind) params.kind = filters.kind
+    if (filters.project_id) params.project_id = filters.project_id
+    if (filters.q) params.q = filters.q
     const { data } = await api.get('/runs', { params })
     runs.value = data
+    // Refresh counts from an unfiltered-by-status snapshot.
+    await loadCounts()
   } finally {
     loading.value = false
   }
+}
+
+async function loadCounts() {
+  const params = {}
+  if (filters.kind) params.kind = filters.kind
+  if (filters.project_id) params.project_id = filters.project_id
+  if (filters.q) params.q = filters.q
+  const { data } = await api.get('/runs', { params })
+  counts.all = data.length
+  counts.passed = data.filter((r) => r.status === 'passed').length
+  counts.failed = data.filter((r) => r.status === 'failed').length
+  counts.running = data.filter((r) => ['running', 'pending'].includes(r.status)).length
 }
 
 async function loadProjects() {
@@ -169,7 +255,7 @@ function onProjectChange(id) {
 
 async function openRun() {
   await loadProjects()
-  const preset = route.query.project ? Number(route.query.project) : projects.value[0]?.id
+  const preset = filters.project_id || projects.value[0]?.id
   runForm.project_id = preset || null
   runForm.suite_name = route.query.suite || ''
   if (preset) await loadSuites(preset)
@@ -191,6 +277,16 @@ async function submitRun() {
   }
 }
 
+async function rerun(row) {
+  try {
+    const { data } = await api.post(`/runs/${row.id}/rerun`)
+    ElMessage.success(`已发起重跑 #${data.id}`)
+    router.push({ name: 'run-detail', params: { runId: data.id } })
+  } catch {
+    /* handled globally */
+  }
+}
+
 function goDetail(row) {
   router.push({ name: 'run-detail', params: { runId: row.id } })
 }
@@ -201,12 +297,119 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.sum-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.sum {
+  background: var(--panel);
+  border: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  transition: background 0.14s;
+  position: relative;
+}
+.sum:hover {
+  background: var(--panel-alt);
+}
+.sum.on {
+  background: var(--panel-alt);
+}
+.sum.on::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand);
+}
+.sum-n {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.sum-n.ok {
+  color: var(--ok);
+}
+.sum-n.danger {
+  color: var(--danger);
+}
+.sum-n.warn {
+  color: var(--warn);
+}
+.sum-l {
+  font-size: 10px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.searchbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 10px;
+  height: 34px;
+  width: 260px;
+  color: var(--ink-faint);
+}
+.searchbox-inline:focus-within {
+  border-color: var(--brand-border);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.searchbox-inline input {
+  border: none;
+  outline: none;
+  background: none;
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: inherit;
+  min-width: 0;
+}
+.toolbar-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.proj-key {
+  color: var(--brand-strong);
+  font-weight: 600;
+}
 .clickable :deep(.el-table__row) {
   cursor: pointer;
 }
 .empty-mini {
   color: var(--ink-faint);
   font-size: 13px;
-  padding: 32px 0;
+  padding: 34px 0;
+  text-align: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
 }
 </style>

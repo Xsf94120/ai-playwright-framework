@@ -153,6 +153,12 @@ class Run(Base):
         back_populates="run", cascade="all, delete-orphan"
     )
 
+    @property
+    def duration(self) -> float | None:
+        if self.started_at and self.finished_at:
+            return max(0.0, (self.finished_at - self.started_at).total_seconds())
+        return None
+
 
 class RunLog(Base):
     __tablename__ = "run_logs"

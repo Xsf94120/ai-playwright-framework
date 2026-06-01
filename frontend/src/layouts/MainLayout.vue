@@ -2,10 +2,12 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="logo">
-        <div class="logo-mark">AI</div>
+        <div class="logo-mark">
+          <span class="logo-glyph">{{ '>' }}_</span>
+        </div>
         <div class="logo-meta">
-          <span class="logo-text">Playwright 平台</span>
-          <span class="logo-sub">AI Test Automation</span>
+          <span class="logo-text">PLAYWRIGHT</span>
+          <span class="logo-sub">AI Test Console</span>
         </div>
       </div>
 
@@ -19,37 +21,53 @@
           :class="{ active: isActive(item) }"
         >
           <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.label }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-key">{{ item.key }}</span>
         </RouterLink>
+
+        <p class="nav-group">快捷操作</p>
+        <button class="nav-item action" @click="$router.push({ name: 'projects' })">
+          <el-icon><Plus /></el-icon>
+          <span class="nav-label">新建项目</span>
+        </button>
+        <button class="nav-item action" @click="$router.push({ name: 'runs' })">
+          <el-icon><VideoPlay /></el-icon>
+          <span class="nav-label">运行测试</span>
+        </button>
       </nav>
 
       <div class="side-foot">
-        <div class="env-pill">
-          <span class="env-dot" />
-          引擎在线
+        <div class="health" :class="{ down: !online }">
+          <span class="health-dot" />
+          <div class="health-meta">
+            <span class="health-title">{{ online ? '引擎在线' : '引擎离线' }}</span>
+            <span class="health-sub mono">{{ online ? 'engine · ready' : 'reconnecting…' }}</span>
+          </div>
         </div>
-        <p class="ver">v1.0 · ai-playwright</p>
+        <p class="ver mono">v1.0 · ai-playwright</p>
       </div>
     </aside>
 
     <div class="main">
       <header class="topbar">
-        <el-breadcrumb separator="/">
-          <el-breadcrumb-item :to="{ name: 'dashboard' }">首页</el-breadcrumb-item>
-          <el-breadcrumb-item>{{ currentLabel }}</el-breadcrumb-item>
-        </el-breadcrumb>
+        <div class="crumbs">
+          <span class="crumb-root mono">~/</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-cur">{{ currentLabel }}</span>
+        </div>
 
         <div class="topbar-right">
-          <el-button
-            text
-            class="quick-run"
-            :icon="VideoPlay"
-            @click="$router.push({ name: 'runs' })"
-          >
-            执行记录
-          </el-button>
+          <div class="searchbox">
+            <el-icon><Search /></el-icon>
+            <input
+              v-model="search"
+              placeholder="搜索运行 / 项目…"
+              @keyup.enter="doSearch"
+            />
+            <span class="search-kbd mono">↵</span>
+          </div>
           <span class="divider" />
-          <el-dropdown @command="onCommand">
+          <el-dropdown @command="onCommand" trigger="click">
             <span class="user">
               <span class="avatar">{{ initial }}</span>
               <span class="uname">{{ auth.username }}</span>
@@ -73,28 +91,45 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ArrowDown, DataLine, Folder, VideoPlay } from '@element-plus/icons-vue'
+import {
+  ArrowDown,
+  DataLine,
+  Folder,
+  VideoPlay,
+  Search,
+  Plus,
+} from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
+import api from '../api/client'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const search = ref('')
+const online = ref(true)
+let timer = null
 
 const navItems = [
-  { to: '/dashboard', label: '总览仪表盘', icon: DataLine, match: ['dashboard'] },
+  { to: '/dashboard', label: '总览仪表盘', icon: DataLine, key: 'D', match: ['dashboard'] },
   {
     to: '/projects',
     label: '项目管理',
     icon: Folder,
+    key: 'P',
     match: ['projects', 'project-detail', 'suite-new', 'suite-edit'],
   },
-  { to: '/runs', label: '执行记录', icon: VideoPlay, match: ['runs', 'run-detail'] },
+  { to: '/runs', label: '执行记录', icon: VideoPlay, key: 'R', match: ['runs', 'run-detail'] },
 ]
 
 function isActive(item) {
   return item.match.includes(route.name)
+}
+
+function doSearch() {
+  const q = search.value.trim()
+  router.push({ name: 'runs', query: q ? { q } : {} })
 }
 
 const initial = computed(() => (auth.username || 'U').charAt(0).toUpperCase())
@@ -118,6 +153,21 @@ function onCommand(command) {
     router.replace({ name: 'login' })
   }
 }
+
+async function ping() {
+  try {
+    await api.get('/health', { timeout: 4000 })
+    online.value = true
+  } catch {
+    online.value = false
+  }
+}
+
+onMounted(() => {
+  ping()
+  timer = setInterval(ping, 15000)
+})
+onBeforeUnmount(() => timer && clearInterval(timer))
 </script>
 
 <style scoped>
@@ -127,9 +177,8 @@ function onCommand(command) {
 }
 
 .sidebar {
-  width: 244px;
-  background: var(--side-bg);
-  border-right: 1px solid var(--side-border);
+  width: 232px;
+  background: var(--void);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -139,40 +188,46 @@ function onCommand(command) {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 20px 18px;
-  border-bottom: 1px solid var(--side-border);
+  padding: 17px 16px;
+  border-bottom: 1px solid var(--void-border);
 }
 
 .logo-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--brand);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px -2px rgba(232, 89, 12, 0.5);
+}
+.logo-glyph {
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
   font-size: 14px;
-  flex-shrink: 0;
+  letter-spacing: -1px;
 }
 
 .logo-meta {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
+  line-height: 1.3;
 }
-
 .logo-text {
-  font-weight: 650;
-  font-size: 14.5px;
-  color: var(--side-text-strong);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--void-text-strong);
 }
-
 .logo-sub {
-  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
   color: var(--ink-faint);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .side-nav {
@@ -181,73 +236,121 @@ function onCommand(command) {
 }
 
 .nav-group {
-  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-  margin: 8px 10px 10px;
+  letter-spacing: 0.14em;
+  color: #6d645a;
+  margin: 14px 10px 8px;
+}
+.nav-group:first-child {
+  margin-top: 2px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
   gap: 11px;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 9px;
-  color: var(--side-text);
+  height: 38px;
+  padding: 0 11px;
+  border-radius: 7px;
+  color: var(--void-text);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
-  margin-bottom: 3px;
-  transition: background 0.15s, color 0.15s;
+  margin-bottom: 2px;
+  transition: background 0.14s, color 0.14s;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  position: relative;
 }
-
 .nav-item .el-icon {
-  font-size: 17px;
+  font-size: 16px;
+  flex-shrink: 0;
 }
-
+.nav-label {
+  flex: 1;
+}
+.nav-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #6d645a;
+  border: 1px solid var(--void-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
 .nav-item:hover {
-  background: var(--side-bg-soft);
-  color: var(--side-text-strong);
+  background: var(--void-soft);
+  color: var(--void-text-strong);
 }
-
 .nav-item.active {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  background: var(--void-soft);
   color: #fff;
-  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 3px 3px 0;
+}
+.nav-item.active .el-icon {
+  color: var(--brand);
+}
+.nav-item.action {
+  color: var(--ink-faint);
+  font-size: 13px;
 }
 
 .side-foot {
-  padding: 16px 18px;
-  border-top: 1px solid var(--side-border);
+  padding: 14px 16px;
+  border-top: 1px solid var(--void-border);
 }
-
-.env-pill {
-  display: inline-flex;
+.health {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  color: var(--side-text-strong);
-  background: var(--side-bg-soft);
-  border: 1px solid var(--side-border);
-  border-radius: 999px;
-  padding: 5px 11px;
+  gap: 9px;
 }
-
-.env-dot {
-  width: 7px;
-  height: 7px;
+.health-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--ok);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 3px rgba(47, 158, 68, 0.18);
+  flex-shrink: 0;
 }
-
+.health.down .health-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.18);
+}
+.health-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.health-title {
+  font-size: 12.5px;
+  color: var(--void-text-strong);
+  font-weight: 550;
+}
+.health-sub {
+  font-size: 10px;
+  color: var(--ink-faint);
+}
 .ver {
   margin: 12px 0 0;
-  font-size: 11px;
-  color: var(--ink-faint);
+  font-size: 10px;
+  color: #57504780;
+  color: #5a534a;
 }
 
 .main {
@@ -258,34 +361,83 @@ function onCommand(command) {
 }
 
 .topbar {
-  height: 60px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
+  height: 56px;
+  background: rgba(244, 242, 237, 0.8);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 22px;
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.topbar-right {
+.crumbs {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 13.5px;
+}
+.crumb-root {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+.crumb-sep {
+  color: var(--ink-faint);
+}
+.crumb-cur {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-.quick-run {
-  color: var(--ink-soft);
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.searchbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 10px;
+  height: 34px;
+  width: 240px;
+  color: var(--ink-faint);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.searchbox:focus-within {
+  border-color: var(--brand-border);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.searchbox input {
+  border: none;
+  outline: none;
+  background: none;
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: inherit;
+  min-width: 0;
+}
+.search-kbd {
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  color: var(--ink-faint);
 }
 
 .divider {
   width: 1px;
-  height: 22px;
+  height: 20px;
   background: var(--border);
-  margin: 0 4px;
 }
 
 .user {
@@ -294,32 +446,29 @@ function onCommand(command) {
   gap: 8px;
   cursor: pointer;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13.5px;
   padding: 4px 6px;
-  border-radius: 8px;
+  border-radius: 7px;
 }
-
 .user:hover {
-  background: var(--panel-alt);
+  background: var(--panel-tint);
 }
-
 .avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
-  color: #fff;
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  background: var(--void);
+  color: var(--brand);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 12px;
+  font-family: 'Space Grotesk', sans-serif;
 }
-
 .uname {
   font-weight: 550;
 }
-
 .caret {
   font-size: 13px;
   color: var(--ink-faint);
@@ -328,6 +477,11 @@ function onCommand(command) {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 28px;
+  padding: 22px 24px 32px;
+}
+@media (max-width: 720px) {
+  .searchbox {
+    width: 140px;
+  }
 }
 </style>

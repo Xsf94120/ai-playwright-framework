@@ -2,6 +2,7 @@
   <div>
     <div class="page-header">
       <div>
+        <p class="kicker">PROJECTS</p>
         <h2 class="page-title">项目管理</h2>
         <p class="page-subtitle">每个项目对应一套测试环境、LLM 配置与用例集</p>
       </div>
@@ -222,24 +223,40 @@ onMounted(load)
 .proj-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 18px;
+  gap: 14px;
 }
 
 .proj-card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 18px;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.proj-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  background: var(--brand);
+  border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transition: opacity 0.18s;
 }
 .proj-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--border-strong);
+}
+.proj-card:hover::before {
+  opacity: 1;
 }
 
 .card-top {
@@ -249,16 +266,17 @@ onMounted(load)
 }
 
 .card-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
-  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--void);
+  color: var(--brand);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 17px;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .more-btn {

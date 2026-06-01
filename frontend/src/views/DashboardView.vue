@@ -2,10 +2,11 @@
   <div v-loading="loading">
     <div class="page-header">
       <div>
+        <p class="kicker">OVERVIEW</p>
         <h2 class="page-title">总览仪表盘</h2>
         <p class="page-subtitle">测试资产与执行结果的实时概览</p>
       </div>
-      <div class="flex gap-12">
+      <div class="flex gap-10">
         <el-button :icon="Refresh" @click="load">刷新</el-button>
         <el-button type="primary" :icon="VideoPlay" @click="$router.push({ name: 'runs' })">
           运行测试
@@ -13,112 +14,159 @@
       </div>
     </div>
 
-    <!-- Stat cards -->
-    <div class="stat-grid">
-      <div class="stat-card" v-for="card in cards" :key="card.label">
-        <div class="stat-top">
-          <span class="stat-label">{{ card.label }}</span>
-          <span class="stat-icon" :class="card.tone">
-            <el-icon><component :is="card.icon" /></el-icon>
-          </span>
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi" v-for="(card, i) in cards" :key="card.label" :class="{ tall: i === 0 }">
+        <div class="kpi-head">
+          <span class="kpi-label kicker">{{ card.label }}</span>
+          <el-icon class="kpi-ic" :class="card.tone"><component :is="card.icon" /></el-icon>
         </div>
-        <div class="stat-value">{{ card.value }}</div>
-        <div class="stat-foot" :class="card.tone">{{ card.foot }}</div>
+        <div class="kpi-value">{{ card.value }}</div>
+        <div class="kpi-foot">
+          <span class="kpi-foot-dot" :class="card.tone" />{{ card.foot }}
+        </div>
       </div>
     </div>
 
-    <div class="grid-2">
+    <div class="grid-main">
       <!-- Trend -->
-      <div class="panel">
-        <div class="flex-between" style="margin-bottom: 18px">
-          <h3 class="section-title">近 7 天执行趋势</h3>
+      <div class="panel-flush">
+        <div class="panel-head">
+          <h3 class="section-title tick">近 7 天执行趋势</h3>
           <div class="legend">
             <span class="lg"><i class="sw ok" />通过</span>
             <span class="lg"><i class="sw danger" />失败</span>
           </div>
         </div>
-        <div class="chart" v-if="hasTrend">
-          <div class="bar-col" v-for="d in stats.trend" :key="d.date">
-            <div class="bars">
-              <div
-                class="bar ok"
-                :style="{ height: barH(d.passed) }"
-                :title="`通过 ${d.passed}`"
-              />
-              <div
-                class="bar danger"
-                :style="{ height: barH(d.failed) }"
-                :title="`失败 ${d.failed}`"
-              />
+        <div class="panel-body">
+          <div class="chart" v-if="hasTrend">
+            <div class="bar-col" v-for="d in stats.trend" :key="d.date">
+              <span class="bar-total mono">{{ d.passed + d.failed || '' }}</span>
+              <div class="bars">
+                <div class="bar ok" :style="{ height: barH(d.passed) }" :title="`通过 ${d.passed}`" />
+                <div class="bar danger" :style="{ height: barH(d.failed) }" :title="`失败 ${d.failed}`" />
+              </div>
+              <span class="bar-label mono">{{ d.date }}</span>
             </div>
-            <span class="bar-label">{{ d.date }}</span>
           </div>
+          <div v-else class="empty-mini">暂无执行数据</div>
         </div>
-        <div v-else class="empty-mini">暂无执行数据</div>
       </div>
 
       <!-- Pass rate ring -->
-      <div class="panel ring-panel">
-        <h3 class="section-title">通过率</h3>
-        <div class="ring-wrap">
+      <div class="panel-flush">
+        <div class="panel-head">
+          <h3 class="section-title tick">总体通过率</h3>
+        </div>
+        <div class="panel-body ring-body">
           <div
             class="ring"
-            :style="{
-              background: `conic-gradient(var(--ok) ${stats.pass_rate * 3.6}deg, var(--border) 0deg)`,
-            }"
+            :style="{ background: `conic-gradient(var(--ok) ${stats.pass_rate * 3.6}deg, var(--line) 0deg)` }"
           >
             <div class="ring-hole">
-              <span class="ring-num">{{ stats.pass_rate }}%</span>
-              <span class="ring-cap">通过率</span>
+              <span class="ring-num">{{ stats.pass_rate }}<small>%</small></span>
+              <span class="ring-cap kicker">PASS RATE</span>
+            </div>
+          </div>
+          <div class="ring-stats">
+            <div class="rs"><span class="dot ok" /><span class="rs-n">{{ stats.passed }}</span><span class="rs-l">通过</span></div>
+            <div class="rs"><span class="dot danger" /><span class="rs-n">{{ stats.failed }}</span><span class="rs-l">失败</span></div>
+            <div class="rs"><span class="dot warn" /><span class="rs-n">{{ stats.running }}</span><span class="rs-l">进行中</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-second">
+      <!-- Project breakdown -->
+      <div class="panel-flush">
+        <div class="panel-head">
+          <h3 class="section-title tick">项目维度</h3>
+          <el-button text type="primary" size="small" @click="$router.push({ name: 'projects' })">
+            管理项目
+          </el-button>
+        </div>
+        <div class="proj-list" v-if="stats.project_breakdown.length">
+          <div class="proj-row" v-for="p in stats.project_breakdown" :key="p.id" @click="goProject(p.id)">
+            <div class="proj-id">
+              <span class="proj-key mono">{{ p.key }}</span>
+              <span class="proj-name">{{ p.name }}</span>
+            </div>
+            <div class="proj-bar">
+              <div class="proj-bar-track">
+                <div class="proj-bar-fill" :style="{ width: p.pass_rate + '%' }" />
+              </div>
+              <span class="proj-rate mono">{{ p.pass_rate }}%</span>
+            </div>
+            <div class="proj-meta mono">
+              <span>{{ p.suites }} 用例集</span>
+              <span class="proj-dot">·</span>
+              <span>{{ p.runs }} 次执行</span>
             </div>
           </div>
         </div>
-        <div class="ring-stats">
-          <div><span class="dot ok" />通过 <b>{{ stats.passed }}</b></div>
-          <div><span class="dot danger" />失败 <b>{{ stats.failed }}</b></div>
-          <div><span class="dot warn" />进行中 <b>{{ stats.running }}</b></div>
+        <div v-else class="empty-mini">暂无项目</div>
+      </div>
+
+      <!-- Top failing -->
+      <div class="panel-flush">
+        <div class="panel-head">
+          <h3 class="section-title tick">高频失败用例</h3>
+        </div>
+        <div class="fail-list" v-if="stats.top_failing.length">
+          <div class="fail-row" v-for="(f, i) in stats.top_failing" :key="i">
+            <span class="fail-rank mono">{{ i + 1 }}</span>
+            <div class="fail-meta">
+              <span class="fail-name mono">{{ f.suite_name }}</span>
+              <span class="fail-proj mono">{{ f.project_key }}</span>
+            </div>
+            <span class="badge danger"><span class="dot" />{{ f.failures }} 次</span>
+          </div>
+        </div>
+        <div v-else class="empty-ok">
+          <el-icon><CircleCheck /></el-icon>
+          <span>暂无失败用例，状态良好</span>
         </div>
       </div>
     </div>
 
     <!-- Recent runs -->
-    <div class="panel-flush" style="margin-top: 18px">
-      <div class="flush-head flex-between">
-        <h3 class="section-title">最近执行</h3>
-        <el-button text type="primary" @click="$router.push({ name: 'runs' })">
+    <div class="panel-flush" style="margin-top: 16px">
+      <div class="panel-head">
+        <h3 class="section-title tick">最近执行</h3>
+        <el-button text type="primary" size="small" @click="$router.push({ name: 'runs' })">
           查看全部
         </el-button>
       </div>
       <el-table :data="stats.recent_runs" @row-click="goRun" class="clickable">
-        <el-table-column label="#" width="72">
+        <el-table-column label="#" width="64">
           <template #default="{ row }"><span class="mono">{{ row.id }}</span></template>
         </el-table-column>
-        <el-table-column label="类型" width="92">
+        <el-table-column label="类型" width="80">
           <template #default="{ row }">
             <span class="badge" :class="row.kind === 'generate' ? 'warn' : 'info'">
-              {{ row.kind === 'generate' ? '生成' : '运行' }}
+              {{ row.kind === 'generate' ? 'GEN' : 'RUN' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="项目" width="150">
+        <el-table-column label="项目" width="130">
           <template #default="{ row }"><span class="mono">{{ row.project_key }}</span></template>
         </el-table-column>
-        <el-table-column label="用例集" min-width="160">
+        <el-table-column label="用例集" min-width="150">
+          <template #default="{ row }"><span class="mono">{{ row.suite_name || '全部' }}</span></template>
+        </el-table-column>
+        <el-table-column label="环境" width="90">
+          <template #default="{ row }"><span class="muted mono">{{ row.env }}</span></template>
+        </el-table-column>
+        <el-table-column label="耗时" width="90">
+          <template #default="{ row }"><span class="muted mono">{{ dur(row.duration) }}</span></template>
+        </el-table-column>
+        <el-table-column label="状态" width="108">
           <template #default="{ row }">
-            <span class="mono">{{ row.suite_name || '全部' }}</span>
+            <span class="badge" :class="statusTone(row.status)"><span class="dot" />{{ statusText(row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="环境" width="110">
-          <template #default="{ row }"><span class="muted">{{ row.env }}</span></template>
-        </el-table-column>
-        <el-table-column label="状态" width="120">
-          <template #default="{ row }">
-            <span class="badge" :class="statusTone(row.status)">
-              <span class="dot" />{{ statusText(row.status) }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="时间" width="170">
+        <el-table-column label="时间" width="160">
           <template #default="{ row }"><span class="muted">{{ fmt(row.created_at) }}</span></template>
         </el-table-column>
         <template #empty>
@@ -139,6 +187,7 @@ import {
   Files,
   Histogram,
   CircleCheck,
+  Timer,
 } from '@element-plus/icons-vue'
 import api from '../api/client'
 
@@ -152,32 +201,15 @@ const stats = ref({
   failed: 0,
   running: 0,
   pass_rate: 0,
+  today_runs: 0,
+  avg_duration: 0,
   trend: [],
+  project_breakdown: [],
+  top_failing: [],
   recent_runs: [],
 })
 
 const cards = computed(() => [
-  {
-    label: '项目数',
-    value: stats.value.projects,
-    icon: Folder,
-    tone: 'info',
-    foot: '配置的测试项目',
-  },
-  {
-    label: '用例集',
-    value: stats.value.suites,
-    icon: Files,
-    tone: 'brand',
-    foot: '分层用例集合',
-  },
-  {
-    label: '总执行次数',
-    value: stats.value.runs,
-    icon: Histogram,
-    tone: 'warn',
-    foot: `进行中 ${stats.value.running}`,
-  },
   {
     label: '通过率',
     value: `${stats.value.pass_rate}%`,
@@ -185,22 +217,36 @@ const cards = computed(() => [
     tone: 'ok',
     foot: `通过 ${stats.value.passed} · 失败 ${stats.value.failed}`,
   },
+  {
+    label: '总执行',
+    value: stats.value.runs,
+    icon: Histogram,
+    tone: 'brand',
+    foot: `今日 ${stats.value.today_runs} 次`,
+  },
+  {
+    label: '平均耗时',
+    value: dur(stats.value.avg_duration),
+    icon: Timer,
+    tone: 'info',
+    foot: '近 100 次执行',
+  },
+  {
+    label: '项目',
+    value: stats.value.projects,
+    icon: Folder,
+    tone: 'neutral',
+    foot: `${stats.value.suites} 个用例集`,
+  },
 ])
 
-const hasTrend = computed(() =>
-  stats.value.trend.some((d) => d.passed > 0 || d.failed > 0)
-)
-
-const maxTrend = computed(() => {
-  const m = Math.max(1, ...stats.value.trend.map((d) => d.passed + d.failed))
-  return m
-})
+const hasTrend = computed(() => stats.value.trend.some((d) => d.passed > 0 || d.failed > 0))
+const maxTrend = computed(() => Math.max(1, ...stats.value.trend.map((d) => d.passed + d.failed)))
 
 function barH(v) {
   const pct = (v / maxTrend.value) * 100
-  return `${Math.max(v > 0 ? 6 : 0, pct)}%`
+  return `${Math.max(v > 0 ? 8 : 0, pct)}%`
 }
-
 function statusTone(s) {
   return { passed: 'ok', failed: 'danger', running: 'warn', pending: 'neutral' }[s] || 'neutral'
 }
@@ -208,11 +254,19 @@ function statusText(s) {
   return { passed: '通过', failed: '失败', running: '运行中', pending: '排队中' }[s] || s
 }
 function fmt(t) {
-  return t ? new Date(t).toLocaleString('zh-CN') : '—'
+  return t ? new Date(t).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 }
-
+function dur(s) {
+  if (s == null) return '—'
+  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`
+  const m = Math.floor(s / 60)
+  return `${m}m${Math.round(s % 60)}s`
+}
 function goRun(row) {
   router.push({ name: 'run-detail', params: { runId: row.id } })
+}
+function goProject(id) {
+  router.push({ name: 'project-detail', params: { id } })
 }
 
 async function load() {
@@ -229,85 +283,100 @@ onMounted(load)
 </script>
 
 <style scoped>
-.stat-grid {
+/* KPI strip */
+.kpi-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.stat-card {
-  background: var(--panel);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 20px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.18s, transform 0.18s;
+  overflow: hidden;
+  margin-bottom: 16px;
 }
-.stat-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+@media (max-width: 880px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-
-.stat-top {
+.kpi {
+  background: var(--panel);
+  padding: 16px 18px;
+  transition: background 0.15s;
+}
+.kpi:hover {
+  background: var(--panel-alt);
+}
+.kpi-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-
-.stat-label {
-  font-size: 13px;
-  color: var(--ink-soft);
-  font-weight: 550;
+.kpi-ic {
+  font-size: 15px;
+  color: var(--ink-faint);
 }
-
-.stat-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
-}
-.stat-icon.info {
-  background: var(--info-soft);
-  color: var(--info);
-}
-.stat-icon.brand {
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-.stat-icon.warn {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-.stat-icon.ok {
-  background: var(--ok-soft);
+.kpi-ic.ok {
   color: var(--ok);
 }
-
-.stat-value {
+.kpi-ic.brand {
+  color: var(--brand);
+}
+.kpi-ic.info {
+  color: var(--info);
+}
+.kpi-value {
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin: 14px 0 4px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 10px 0 6px;
+  line-height: 1;
 }
-
-.stat-foot {
-  font-size: 12px;
+.kpi-foot {
+  font-size: 11.5px;
   color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kpi-foot-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+.kpi-foot-dot.ok {
+  background: var(--ok);
+}
+.kpi-foot-dot.brand {
+  background: var(--brand);
+}
+.kpi-foot-dot.info {
+  background: var(--info);
 }
 
-.grid-2 {
+/* Main grid */
+.grid-main {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 18px;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-@media (max-width: 920px) {
-  .grid-2 {
+.grid-second {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 880px) {
+  .grid-main,
+  .grid-second {
     grid-template-columns: 1fr;
   }
+}
+
+.panel-body {
+  padding: 18px;
 }
 
 /* Chart */
@@ -323,9 +392,9 @@ onMounted(load)
   gap: 6px;
 }
 .sw {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
 }
 .sw.ok {
   background: var(--ok);
@@ -333,14 +402,12 @@ onMounted(load)
 .sw.danger {
   background: var(--danger);
 }
-
 .chart {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  height: 220px;
-  padding-top: 8px;
+  gap: 10px;
+  height: 196px;
 }
 .bar-col {
   flex: 1;
@@ -349,94 +416,105 @@ onMounted(load)
   align-items: center;
   height: 100%;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 7px;
+}
+.bar-total {
+  font-size: 11px;
+  color: var(--ink-faint);
+  height: 14px;
 }
 .bars {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
   height: 100%;
   width: 100%;
   justify-content: center;
 }
 .bar {
-  width: 16px;
-  border-radius: 5px 5px 0 0;
-  min-height: 0;
+  width: 14px;
+  border-radius: 3px 3px 0 0;
   transition: height 0.4s ease;
 }
 .bar.ok {
-  background: linear-gradient(180deg, #34d399, var(--ok));
+  background: var(--ok);
 }
 .bar.danger {
-  background: linear-gradient(180deg, #f87171, var(--danger));
+  background: var(--danger);
 }
 .bar-label {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--ink-faint);
-}
-
-.empty-mini {
-  color: var(--ink-faint);
-  font-size: 13px;
-  text-align: center;
-  padding: 28px 0;
 }
 
 /* Ring */
-.ring-panel {
+.ring-body {
   display: flex;
   flex-direction: column;
-}
-.ring-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 14px 0 18px;
+  align-items: center;
+  gap: 16px;
 }
 .ring {
-  width: 156px;
-  height: 156px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 6px;
 }
 .ring-hole {
-  width: 116px;
-  height: 116px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   background: var(--panel);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
 }
 .ring-num {
-  font-size: 28px;
-  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1;
+}
+.ring-num small {
+  font-size: 15px;
+  color: var(--ink-soft);
 }
 .ring-cap {
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 9.5px;
 }
 .ring-stats {
   display: flex;
-  justify-content: space-around;
-  border-top: 1px solid var(--border);
+  width: 100%;
+  border-top: 1px solid var(--line);
   padding-top: 14px;
-  font-size: 13px;
-  color: var(--ink-soft);
 }
-.ring-stats b {
-  color: var(--ink);
+.rs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rs-n {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+.rs-l {
+  font-size: 11px;
+  color: var(--ink-soft);
 }
 .dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  margin-right: 6px;
 }
 .dot.ok {
   background: var(--ok);
@@ -448,9 +526,139 @@ onMounted(load)
   background: var(--warn);
 }
 
-.flush-head {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
+/* Project breakdown */
+.proj-list {
+  padding: 6px 0;
+}
+.proj-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.14s;
+}
+.proj-row:last-child {
+  border-bottom: none;
+}
+.proj-row:hover {
+  background: var(--panel-tint);
+}
+.proj-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.proj-key {
+  color: var(--brand-strong);
+  font-weight: 600;
+  font-size: 12px;
+}
+.proj-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.proj-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.proj-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.proj-bar-fill {
+  height: 100%;
+  background: var(--ok);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.proj-rate {
+  font-size: 12px;
+  color: var(--ink-soft);
+  width: 38px;
+  text-align: right;
+}
+.proj-meta {
+  font-size: 11px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.proj-dot {
+  margin: 0 4px;
+}
+
+/* Fail list */
+.fail-list {
+  padding: 6px 0;
+}
+.fail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.fail-row:last-child {
+  border-bottom: none;
+}
+.fail-rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--panel-tint);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.fail-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fail-name {
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fail-proj {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.empty-ok {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 0;
+  color: var(--ok);
+  font-size: 13px;
+}
+.empty-ok .el-icon {
+  font-size: 26px;
+}
+
+.empty-mini {
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+  padding: 30px 0;
 }
 .clickable :deep(.el-table__row) {
   cursor: pointer;

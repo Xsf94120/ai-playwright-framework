@@ -174,6 +174,7 @@ class RunOut(ORMModel):
     headed: bool
     command: str
     exit_code: Optional[int] = None
+    duration: Optional[float] = None
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None

@@ -81,7 +81,7 @@ function addStep(c, index) {
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 16px;
-  background: #fbfdfc;
+  background: var(--panel-alt);
 }
 .case-head {
   display: flex;
@@ -111,7 +111,7 @@ function addStep(c, index) {
   flex-shrink: 0;
   border-radius: 6px;
   background: var(--brand-soft);
-  color: var(--brand-dark);
+  color: var(--brand-strong);
   font-size: 12px;
   display: flex;
   align-items: center;
