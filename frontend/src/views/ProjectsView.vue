@@ -8,43 +8,56 @@
       <el-button type="primary" :icon="Plus" @click="openCreate">新建项目</el-button>
     </div>
 
-    <div class="panel" v-loading="loading">
-      <el-table :data="projects" stripe>
-        <el-table-column label="项目" min-width="220">
-          <template #default="{ row }">
-            <div class="proj-cell" @click="goDetail(row)">
-              <span class="proj-name">{{ row.name }}</span>
-              <el-tag size="small" type="info" class="mono">{{ row.key }}</el-tag>
-            </div>
-            <div class="muted proj-desc">{{ row.description || '暂无描述' }}</div>
-          </template>
-        </el-table-column>
-        <el-table-column label="环境" width="220">
-          <template #default="{ row }">
-            <el-tag
-              v-for="env in row.environments"
-              :key="env.id"
-              size="small"
-              class="env-tag"
-            >
-              {{ env.name }}
-            </el-tag>
-            <span v-if="!row.environments.length" class="muted">未配置</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="视口" width="130">
-          <template #default="{ row }">
-            <span class="mono">{{ row.viewport_width }}×{{ row.viewport_height }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" align="right">
-          <template #default="{ row }">
-            <el-button text type="primary" @click="goDetail(row)">配置</el-button>
-            <el-button text type="primary" @click="goRuns(row)">执行</el-button>
-            <el-button text type="danger" @click="remove(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <div v-loading="loading">
+      <div v-if="projects.length" class="proj-grid">
+        <article
+          v-for="p in projects"
+          :key="p.id"
+          class="proj-card"
+          @click="goDetail(p)"
+        >
+          <div class="card-top">
+            <div class="card-avatar">{{ p.name.charAt(0).toUpperCase() }}</div>
+            <el-dropdown trigger="click" @command="(c) => onCommand(c, p)" @click.stop>
+              <el-button text :icon="MoreFilled" class="more-btn" @click.stop />
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="config" :icon="Setting">配置</el-dropdown-item>
+                  <el-dropdown-item command="run" :icon="VideoPlay">执行</el-dropdown-item>
+                  <el-dropdown-item command="delete" :icon="Delete" divided>删除</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+
+          <h3 class="card-name">{{ p.name }}</h3>
+          <span class="badge neutral mono card-key">{{ p.key }}</span>
+          <p class="card-desc">{{ p.description || '暂无描述' }}</p>
+
+          <div class="card-envs">
+            <span v-for="env in p.environments" :key="env.id" class="env-chip">
+              <span class="env-dot" />{{ env.name }}
+            </span>
+            <span v-if="!p.environments.length" class="muted" style="font-size: 12px">
+              未配置环境
+            </span>
+          </div>
+
+          <div class="card-foot">
+            <span class="mono">{{ p.viewport_width }}×{{ p.viewport_height }}</span>
+            <span class="trace-tag" :class="{ on: p.tracing !== 'off' }">
+              Tracing {{ p.tracing }}
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <div v-else-if="!loading" class="empty-state">
+        <div class="empty-icon"><el-icon><FolderOpened /></el-icon></div>
+        <h3>还没有项目</h3>
+        <p class="muted">创建第一个项目，开始配置环境、用例集与 AI 运行参数</p>
+        <el-button type="primary" :icon="Plus" @click="openCreate">新建项目</el-button>
+      </div>
     </div>
 
     <el-dialog v-model="dialogVisible" title="新建项目" width="560">
@@ -66,7 +79,7 @@
           </div>
         </el-form-item>
         <el-form-item label="Tracing">
-          <el-select v-model="form.tracing" style="width: 200px">
+          <el-select v-model="form.tracing" style="width: 220px">
             <el-option label="off 关闭" value="off" />
             <el-option label="on 始终录制" value="on" />
             <el-option label="retain-on-failure 失败保留" value="retain-on-failure" />
@@ -95,7 +108,14 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import {
+  Plus,
+  Delete,
+  MoreFilled,
+  Setting,
+  VideoPlay,
+  FolderOpened,
+} from '@element-plus/icons-vue'
 import api from '../api/client'
 
 const router = useRouter()
@@ -178,8 +198,10 @@ function goDetail(row) {
   router.push({ name: 'project-detail', params: { id: row.id } })
 }
 
-function goRuns(row) {
-  router.push({ name: 'runs', query: { project: row.id } })
+function onCommand(command, row) {
+  if (command === 'config') goDetail(row)
+  else if (command === 'run') router.push({ name: 'runs', query: { project: row.id } })
+  else if (command === 'delete') remove(row)
 }
 
 async function remove(row) {
@@ -197,22 +219,150 @@ onMounted(load)
 </script>
 
 <style scoped>
-.proj-cell {
+.proj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.proj-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
+  display: flex;
+  flex-direction: column;
+}
+.proj-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.card-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  color: #fff;
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
 }
-.proj-name {
+
+.more-btn {
+  color: var(--ink-faint);
+  padding: 4px;
+}
+
+.card-name {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 14px 0 8px;
+}
+
+.card-key {
+  align-self: flex-start;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 12px 0 14px;
+  line-height: 1.55;
+  min-height: 40px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-envs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.env-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 550;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+.env-chip .env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.trace-tag {
+  font-size: 11px;
   font-weight: 600;
+  color: var(--ink-faint);
 }
-.proj-desc {
-  font-size: 12.5px;
-  margin-top: 2px;
+.trace-tag.on {
+  color: var(--warn);
 }
-.env-tag {
-  margin-right: 6px;
+
+.empty-state {
+  text-align: center;
+  padding: 70px 20px;
+  background: var(--panel);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
 }
+.empty-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.empty-state h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.empty-state p {
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+
 .env-editor {
   width: 100%;
 }

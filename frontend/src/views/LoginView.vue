@@ -77,7 +77,7 @@ async function onSubmit() {
     try {
       await auth.login(form.username, form.password)
       ElMessage.success('登录成功')
-      router.replace(route.query.redirect || { name: 'projects' })
+      router.replace(route.query.redirect || { name: 'dashboard' })
     } catch (e) {
       // error toast handled by interceptor
     } finally {
@@ -93,7 +93,8 @@ async function onSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #245752 0%, #2f6f6a 55%, #3c8a83 100%);
+  background: radial-gradient(1200px 600px at 20% -10%, #115e59 0%, transparent 55%),
+    linear-gradient(135deg, #0b1220 0%, #0f1e2e 55%, #0d3b38 100%);
   padding: 24px;
 }
 

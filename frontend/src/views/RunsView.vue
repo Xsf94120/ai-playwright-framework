@@ -8,34 +8,36 @@
       <el-button type="primary" :icon="VideoPlay" @click="openRun">运行测试</el-button>
     </div>
 
-    <div class="panel" v-loading="loading">
-      <el-table :data="runs" stripe @row-click="goDetail" class="clickable">
-        <el-table-column label="#" width="70">
+    <div class="panel-flush" v-loading="loading">
+      <el-table :data="runs" @row-click="goDetail" class="clickable">
+        <el-table-column label="#" width="72">
           <template #default="{ row }"><span class="mono">{{ row.id }}</span></template>
         </el-table-column>
-        <el-table-column label="类型" width="90">
+        <el-table-column label="类型" width="92">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.kind === 'generate' ? 'warning' : ''">
+            <span class="badge" :class="row.kind === 'generate' ? 'warn' : 'info'">
               {{ row.kind === 'generate' ? '生成' : '运行' }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="项目" width="140">
           <template #default="{ row }"><span class="mono">{{ row.project_key }}</span></template>
         </el-table-column>
-        <el-table-column label="用例集" min-width="140">
+        <el-table-column label="用例集" min-width="150">
           <template #default="{ row }">
             <span class="mono">{{ row.suite_name || '全部' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="环境/浏览器" width="160">
+        <el-table-column label="环境/浏览器" width="170">
           <template #default="{ row }">
             <span class="muted">{{ row.env }} · {{ row.browser }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="110">
+        <el-table-column label="状态" width="120">
           <template #default="{ row }">
-            <el-tag size="small" :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
+            <span class="badge" :class="[statusTone(row.status), row.status === 'running' ? 'live' : '']">
+              <span class="dot" />{{ statusText(row.status) }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="时间" width="170">
@@ -43,6 +45,9 @@
             <span class="muted">{{ fmt(row.created_at) }}</span>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="empty-mini">还没有执行记录，点击右上角「运行测试」开始第一次执行</div>
+        </template>
       </el-table>
     </div>
 
@@ -121,8 +126,8 @@ const envOptions = computed(() => {
   return p && p.environments.length ? p.environments.map((e) => e.name) : ['prod']
 })
 
-function statusType(s) {
-  return { passed: 'success', failed: 'danger', running: 'warning', pending: 'info' }[s] || 'info'
+function statusTone(s) {
+  return { passed: 'ok', failed: 'danger', running: 'warn', pending: 'neutral' }[s] || 'neutral'
 }
 function statusText(s) {
   return { passed: '通过', failed: '失败', running: '运行中', pending: '排队中' }[s] || s
@@ -198,5 +203,10 @@ onMounted(async () => {
 <style scoped>
 .clickable :deep(.el-table__row) {
   cursor: pointer;
+}
+.empty-mini {
+  color: var(--ink-faint);
+  font-size: 13px;
+  padding: 32px 0;
 }
 </style>

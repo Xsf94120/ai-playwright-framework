@@ -74,6 +74,9 @@ def _seed_demo_project(db: Session) -> None:
             project_id=project.id,
             name="saucedemo_ai",
             description="SauceDemo 标准用户完整购物车流程",
+            cases_yaml=_read_template(
+                "test_data", "demo", "cases", "saucedemo_ai.yaml"
+            ),
             elements_yaml=_read_template(
                 "test_data", "demo", "elements", "saucedemo_ai.yaml"
             ),

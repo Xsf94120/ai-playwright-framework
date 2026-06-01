@@ -1,22 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
-  --brand: #2f6f6a;
-  --brand-dark: #245752;
-  --brand-soft: #e6f1f0;
-  --accent: #d98324;
-  --ink: #1f2933;
-  --ink-soft: #5b6770;
-  --bg: #f5f7f8;
+  /* Brand / accents */
+  --brand: #0d9488;
+  --brand-dark: #0f766e;
+  --brand-darker: #115e59;
+  --brand-soft: #ecfdf9;
+  --accent: #d97706;
+
+  /* Neutrals */
+  --ink: #0f172a;
+  --ink-soft: #64748b;
+  --ink-faint: #94a3b8;
+  --bg: #f6f8fa;
   --panel: #ffffff;
-  --border: #e3e8ea;
+  --panel-alt: #f8fafc;
+  --border: #e6e9ee;
+  --border-strong: #d4dae2;
+
+  /* Sidebar (near-black) */
+  --side-bg: #0b1220;
+  --side-bg-soft: #111a2b;
+  --side-border: #1e293b;
+  --side-text: #94a3b8;
+  --side-text-strong: #e2e8f0;
+
+  /* Status */
+  --ok: #10b981;
+  --ok-soft: #ecfdf5;
+  --danger: #ef4444;
+  --danger-soft: #fef2f2;
+  --warn: #f59e0b;
+  --warn-soft: #fffbeb;
+  --info: #3b82f6;
+  --info-soft: #eff6ff;
+
+  --radius: 12px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 18px 50px rgba(15, 23, 42, 0.16);
 
   /* Element Plus primary override */
-  --el-color-primary: #2f6f6a;
-  --el-color-primary-light-3: #5a918c;
-  --el-color-primary-light-5: #87aeaa;
-  --el-color-primary-light-7: #b4cbc8;
-  --el-color-primary-light-8: #cadcda;
-  --el-color-primary-light-9: #e6f1f0;
-  --el-color-primary-dark-2: #245752;
+  --el-color-primary: #0d9488;
+  --el-color-primary-light-3: #41b3a8;
+  --el-color-primary-light-5: #74c9c0;
+  --el-color-primary-light-7: #a7ded9;
+  --el-color-primary-light-8: #c2e9e5;
+  --el-color-primary-light-9: #ecfdf9;
+  --el-color-primary-dark-2: #0f766e;
+  --el-border-radius-base: 9px;
+  --el-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
 }
 
 * {
@@ -30,40 +64,66 @@ body,
   margin: 0;
 }
 
+html {
+  background: var(--bg);
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   color: var(--ink);
   background: var(--bg);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- Page primitives ---------- */
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
 
 .page-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .page-subtitle {
   color: var(--ink-soft);
   font-size: 13px;
-  margin: 4px 0 0;
+  margin: 6px 0 0;
 }
 
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-flush {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
 }
 
 .muted {
@@ -71,21 +131,83 @@ body {
 }
 
 .mono {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 0.92em;
 }
 
+/* ---------- Status badge ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge.ok {
+  color: #047857;
+  background: var(--ok-soft);
+  border-color: #a7f3d0;
+}
+.badge.danger {
+  color: #b91c1c;
+  background: var(--danger-soft);
+  border-color: #fecaca;
+}
+.badge.warn {
+  color: #b45309;
+  background: var(--warn-soft);
+  border-color: #fde68a;
+}
+.badge.info {
+  color: #1d4ed8;
+  background: var(--info-soft);
+  border-color: #bfdbfe;
+}
+.badge.neutral {
+  color: var(--ink-soft);
+  background: var(--panel-alt);
+  border-color: var(--border);
+}
+
+.badge.live .dot {
+  animation: pulse 1.3s infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- Log console ---------- */
 .log-console {
-  background: #0f1c1b;
-  color: #cfe8e4;
-  border-radius: 8px;
-  padding: 14px 16px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  background: #0b1220;
+  color: #c7d2dc;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
   font-size: 12.5px;
-  line-height: 1.7;
-  height: 460px;
+  line-height: 1.75;
+  height: 480px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  border: 1px solid #1e293b;
 }
 
 .log-console .log-line {
@@ -93,23 +215,67 @@ body {
 }
 
 .log-console .log-platform {
-  color: #f0b860;
+  color: #fbbf24;
 }
 
+.log-console::-webkit-scrollbar {
+  width: 10px;
+}
+.log-console::-webkit-scrollbar-thumb {
+  background: #243047;
+  border-radius: 6px;
+}
+
+/* ---------- Layout utils ---------- */
 .flex {
   display: flex;
 }
-
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
 .flex-between {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-
+.items-center {
+  align-items: center;
+}
+.gap-6 {
+  gap: 6px;
+}
 .gap-8 {
   gap: 8px;
 }
-
 .gap-12 {
   gap: 12px;
+}
+.gap-16 {
+  gap: 16px;
+}
+
+/* ---------- Element Plus refinements ---------- */
+.el-button {
+  font-weight: 550;
+}
+.el-table th.el-table__cell {
+  background: var(--panel-alt) !important;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.el-table {
+  --el-table-border-color: var(--border);
+  font-size: 13.5px;
+}
+.el-card,
+.el-dialog {
+  border-radius: var(--radius) !important;
+}
+.el-dialog__header {
+  font-weight: 600;
+}
+.el-tabs__item {
+  font-weight: 550;
 }

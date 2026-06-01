@@ -4,7 +4,7 @@ import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import SessionLocal, init_db
-from app.routers import auth, configs, projects, runs, suites
+from app.routers import auth, configs, projects, runs, stats, suites
 from app.seed import seed_initial_data
 
 app = fastapi.FastAPI(title="AI Playwright 平台 API")
@@ -38,3 +38,4 @@ app.include_router(projects.router)
 app.include_router(configs.router)
 app.include_router(suites.router)
 app.include_router(runs.router)
+app.include_router(stats.router)

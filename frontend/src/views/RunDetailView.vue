@@ -4,10 +4,12 @@
       <div>
         <h2 class="page-title">
           运行 #{{ run.id }}
-          <el-tag size="small" :type="statusType(run.status)">{{ statusText(run.status) }}</el-tag>
-          <el-tag size="small" :type="run.kind === 'generate' ? 'warning' : ''">
+          <span class="badge" :class="[statusTone(run.status), run.status === 'running' ? 'live' : '']">
+            <span class="dot" />{{ statusText(run.status) }}
+          </span>
+          <span class="badge" :class="run.kind === 'generate' ? 'warn' : 'info'">
             {{ run.kind === 'generate' ? 'AI 生成' : '测试运行' }}
-          </el-tag>
+          </span>
         </h2>
         <p class="page-subtitle mono">{{ run.command || '准备中...' }}</p>
       </div>
@@ -74,8 +76,8 @@ const connected = ref(false)
 const consoleRef = ref()
 let ws = null
 
-function statusType(s) {
-  return { passed: 'success', failed: 'danger', running: 'warning', pending: 'info' }[s] || 'info'
+function statusTone(s) {
+  return { passed: 'ok', failed: 'danger', running: 'warn', pending: 'neutral' }[s] || 'neutral'
 }
 function statusText(s) {
   return { passed: '通过', failed: '失败', running: '运行中', pending: '排队中' }[s] || s
