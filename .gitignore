@@ -29,3 +29,10 @@ __pycache__/
 
 # Local archives and imported bundles
 *.zip
+
+# Platform runtime data (SQLite DB + per-run workspaces)
+/.platform/
+# Service dependency envs
+/backend/.venv/
+/frontend/node_modules/
+/frontend/dist/
