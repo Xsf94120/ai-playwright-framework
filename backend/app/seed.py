@@ -86,5 +86,11 @@ def _seed_demo_project(db: Session) -> None:
             data_yaml=_read_template(
                 "test_data", "demo", "data", "saucedemo_ai.yaml"
             ),
+            modules_yaml=_read_template(
+                "test_data", "demo", "modules", "saucedemo_ai.yaml"
+            ),
+            vars_yaml=_read_template(
+                "test_data", "demo", "vars", "saucedemo_ai.yaml"
+            ),
         )
     )
