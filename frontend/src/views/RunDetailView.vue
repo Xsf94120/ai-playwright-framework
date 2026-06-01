@@ -154,8 +154,14 @@ function scrollBottom() {
     if (consoleRef.value) consoleRef.value.scrollTop = consoleRef.value.scrollHeight
   })
 }
+// 去除 pytest 等工具输出的 ANSI 颜色转义序列，避免日志出现乱码方块
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g
+function stripAnsi(text) {
+  return text.replace(ANSI_RE, '')
+}
 function appendLine(line) {
-  lines.value.push(line)
+  lines.value.push(stripAnsi(line))
   scrollBottom()
 }
 
