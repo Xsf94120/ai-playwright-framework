@@ -1,0 +1,4 @@
+[console_scripts]
+ai-playwright-init = ai_playwright.cli.init_project:cli
+gen = ai_playwright.cli.generate_case:cli
+run_case = ai_playwright.cli.run_case:cli

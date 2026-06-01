@@ -539,17 +539,92 @@ class BasePage:
     @handle_page_error(description="勾选元素")
     def check(self, selector: str):
         """勾选 checkbox/radio 等可勾选控件"""
-        self._locator(selector).check()
+        self._set_checked_smart(selector, True)
 
     @handle_page_error(description="取消勾选元素")
     def uncheck(self, selector: str):
         """取消勾选 checkbox 等控件"""
-        self._locator(selector).uncheck()
+        self._set_checked_smart(selector, False)
 
     @handle_page_error(description="设置勾选状态")
     def set_checked(self, selector: str, checked: bool):
         """设置 checkbox/radio 等控件的选中状态"""
-        self._locator(selector).set_checked(checked)
+        self._set_checked_smart(selector, bool(checked))
+
+    def _set_checked_smart(self, selector: str, checked: bool) -> None:
+        """健壮地设置勾选状态。
+
+        许多组件库（Element Plus、Ant Design 等）的真实 <input> 是隐藏的，
+        Playwright 默认的 check()/uncheck() 会因元素不可见而超时。这里用
+        attached 状态定位，并依次尝试：标准操作 -> 点击关联 label/祖先 ->
+        强制设置，最大程度兼容隐藏的原生表单控件。
+        """
+        # attached 而非 visible，兼容隐藏的原生控件
+        locator = self._locator(selector, state="attached")
+        target = locator.first
+
+        # 已是目标状态则直接返回
+        try:
+            if target.is_checked() == checked:
+                return
+        except Exception:
+            pass
+
+        # 1) 标准方式
+        try:
+            target.set_checked(checked, timeout=DEFAULT_TIMEOUT)
+            return
+        except Exception as exc:
+            logger.warning(f"标准勾选失败，尝试点击关联控件兜底: {selector} | {exc}")
+
+        # 2) 点击关联 label 或可见祖先来切换
+        proxy = self._checkable_proxy(target)
+        if proxy is not None:
+            try:
+                proxy.click(timeout=DEFAULT_TIMEOUT)
+                if self._is_checked_safe(target) == checked:
+                    return
+            except Exception as exc:
+                logger.warning(f"点击关联控件兜底失败: {selector} | {exc}")
+
+        # 3) 最后兜底：强制设置，跳过可见性/可操作性检查
+        target.set_checked(checked, force=True)
+
+    def _checkable_proxy(self, target):
+        """为隐藏的勾选控件寻找一个可点击的代理元素。"""
+        # label[for=id]
+        try:
+            el_id = target.get_attribute("id")
+        except Exception:
+            el_id = None
+        if el_id:
+            label = self.page.locator(f'label[for="{el_id}"]')
+            try:
+                if label.count() > 0:
+                    return label.first
+            except Exception:
+                pass
+        # 祖先 label（组件库常把 input 包在 label 内）
+        try:
+            ancestor_label = target.locator("xpath=ancestor::label[1]")
+            if ancestor_label.count() > 0:
+                return ancestor_label.first
+        except Exception:
+            pass
+        # 直接父元素
+        try:
+            parent = target.locator("xpath=..")
+            if parent.count() > 0:
+                return parent.first
+        except Exception:
+            pass
+        return None
+
+    def _is_checked_safe(self, target) -> bool | None:
+        try:
+            return target.is_checked()
+        except Exception:
+            return None
 
     @handle_page_error(description="按键")
     def press_key(self, selector: str, key: str):

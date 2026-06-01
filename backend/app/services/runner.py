@@ -6,8 +6,6 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
 from app.config import ENGINE_ROOT, PYTHON_BIN, RUNS_DIR
 from app.db import SessionLocal
 from app.models import Project, Run, RunLog, Suite
@@ -189,12 +187,3 @@ async def execute_run(run_id: int) -> None:
     finally:
         _publish(run_id, END_SENTINEL)
         db.close()
-
-
-def workspace_dump_summary(project: Project) -> str:
-    """Helper for previewing the materialized env_config without running."""
-    from app.services.materializer import build_env_config
-
-    return yaml.safe_dump(
-        build_env_config(project), allow_unicode=True, sort_keys=False
-    )

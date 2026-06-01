@@ -25,9 +25,25 @@ def _project_or_404(db: Session, project_id: int) -> Project:
     return project
 
 
+def _validate_env(project: Project, env_name: str) -> None:
+    """确保所选环境存在且已配置 BASE_URL，否则运行必然失败。"""
+    env = next((e for e in project.environments if e.name == env_name), None)
+    if env is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"环境 {env_name} 不存在，请先在项目设置中创建该环境",
+        )
+    if not (env.base_url or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"环境 {env_name} 尚未配置 BASE_URL，请先在项目设置中补全",
+        )
+
+
 @secured.post("/runs", response_model=RunOut, status_code=201)
 async def create_run(payload: RunCreate, db: Session = Depends(get_db)) -> Run:
     project = _project_or_404(db, payload.project_id)
+    _validate_env(project, payload.env)
     run = Run(
         project_id=project.id,
         project_key=project.key,
@@ -51,6 +67,7 @@ async def create_generate(
     payload: GenerateCreate, db: Session = Depends(get_db)
 ) -> Run:
     project = _project_or_404(db, payload.project_id)
+    _validate_env(project, payload.env)
     run = Run(
         project_id=project.id,
         project_key=project.key,

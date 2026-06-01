@@ -13,7 +13,7 @@ from app.schemas import (
     LLMConfigIn,
     LLMConfigOut,
 )
-from app.services.materializer import _default_ai_config_text
+from app.services.materializer import default_ai_config_text
 
 router = APIRouter(
     prefix="/projects/{project_id}",
@@ -72,7 +72,7 @@ def update_llm(
 def get_ai_config(project_id: int, db: Session = Depends(get_db)) -> AIConfigOut:
     project = _project_or_404(db, project_id)
     ai = project.ai_config
-    content = (ai.content_yaml if ai else "") or _default_ai_config_text()
+    content = (ai.content_yaml if ai else "") or default_ai_config_text()
     return AIConfigOut(content_yaml=content)
 
 

@@ -19,7 +19,7 @@ LAYER_FIELDS = {
 }
 
 
-def _default_ai_config_text() -> str:
+def default_ai_config_text() -> str:
     path = ENGINE_TEMPLATES / "config" / "ai_config.yaml"
     try:
         return path.read_text(encoding="utf-8")
@@ -91,7 +91,7 @@ def materialize_project(db: Session, project: Project, workspace: Path, env: str
 
     # 2. config/ai_config.yaml
     ai_config: AIConfig | None = project.ai_config
-    ai_text = (ai_config.content_yaml if ai_config else "") or _default_ai_config_text()
+    ai_text = (ai_config.content_yaml if ai_config else "") or default_ai_config_text()
     (config_dir / "ai_config.yaml").write_text(ai_text, encoding="utf-8")
 
     # 3. test_data/<key>/<layer>/<suite>.yaml

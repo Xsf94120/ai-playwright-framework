@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import get_current_user
 from app.models import AIConfig, Environment, LLMConfig, Project
-from app.schemas import ProjectCreate, ProjectOut, ProjectUpdate
-from app.services.materializer import _default_ai_config_text
+from app.schemas import EnvironmentIn, ProjectCreate, ProjectOut, ProjectUpdate
+from app.services.materializer import default_ai_config_text
 
 router = APIRouter(
     prefix="/projects", tags=["projects"], dependencies=[Depends(get_current_user)]
@@ -51,8 +51,9 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> Pro
     db.add(project)
     db.flush()
 
+    # 至少保证一个环境，避免项目建好后无法运行。
     envs = payload.environments or [
-        # sensible defaults so the project is runnable immediately
+        EnvironmentIn(name="prod", base_url="")
     ]
     for env in envs:
         db.add(
@@ -60,7 +61,7 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> Pro
         )
 
     db.add(LLMConfig(project_id=project.id))
-    db.add(AIConfig(project_id=project.id, content_yaml=_default_ai_config_text()))
+    db.add(AIConfig(project_id=project.id, content_yaml=default_ai_config_text()))
     db.commit()
     db.refresh(project)
     return project
