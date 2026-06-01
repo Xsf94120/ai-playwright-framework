@@ -188,7 +188,7 @@ async function submit() {
       ElMessage.success('项目已创建')
       dialogVisible.value = false
       await load()
-      router.push({ name: 'project-detail', params: { id: data.id } })
+      router.push({ name: 'project-overview', params: { id: data.id } })
     } finally {
       saving.value = false
     }
@@ -196,7 +196,7 @@ async function submit() {
 }
 
 function goDetail(row) {
-  router.push({ name: 'project-detail', params: { id: row.id } })
+  router.push({ name: 'project-overview', params: { id: row.id } })
 }
 
 function onCommand(command, row) {

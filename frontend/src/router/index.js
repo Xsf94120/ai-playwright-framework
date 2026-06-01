@@ -23,21 +23,50 @@ const routes = [
         name: 'projects',
         component: () => import('../views/ProjectsView.vue'),
       },
+      // ---- 项目工作区：进入某个项目后的统一容器 ----
       {
         path: 'projects/:id',
-        name: 'project-detail',
-        component: () => import('../views/ProjectDetailView.vue'),
+        component: () => import('../layouts/ProjectWorkspace.vue'),
+        children: [
+          { path: '', redirect: (to) => `/projects/${to.params.id}/overview` },
+          {
+            path: 'overview',
+            name: 'project-overview',
+            component: () => import('../views/workspace/ProjectOverview.vue'),
+          },
+          {
+            path: 'suites',
+            name: 'project-suites',
+            component: () => import('../views/workspace/ProjectSuites.vue'),
+          },
+          {
+            path: 'suites/new',
+            name: 'suite-new',
+            component: () => import('../views/SuiteEditorView.vue'),
+          },
+          {
+            path: 'suites/:suiteId',
+            name: 'suite-edit',
+            component: () => import('../views/SuiteEditorView.vue'),
+          },
+          {
+            path: 'runs',
+            name: 'project-runs',
+            component: () => import('../views/RunsView.vue'),
+          },
+          {
+            path: 'runs/:runId',
+            name: 'project-run-detail',
+            component: () => import('../views/RunDetailView.vue'),
+          },
+          {
+            path: 'settings',
+            name: 'project-settings',
+            component: () => import('../views/workspace/ProjectSettings.vue'),
+          },
+        ],
       },
-      {
-        path: 'projects/:id/suites/new',
-        name: 'suite-new',
-        component: () => import('../views/SuiteEditorView.vue'),
-      },
-      {
-        path: 'projects/:id/suites/:suiteId',
-        name: 'suite-edit',
-        component: () => import('../views/SuiteEditorView.vue'),
-      },
+      // ---- 全局执行记录（跨项目） ----
       {
         path: 'runs',
         name: 'runs',

@@ -266,7 +266,7 @@ function goRun(row) {
   router.push({ name: 'run-detail', params: { runId: row.id } })
 }
 function goProject(id) {
-  router.push({ name: 'project-detail', params: { id } })
+  router.push({ name: 'project-overview', params: { id } })
 }
 
 async function load() {

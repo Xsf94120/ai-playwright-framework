@@ -16,7 +16,7 @@
       </div>
       <div class="flex gap-10">
         <el-button :icon="RefreshRight" @click="doRerun" :disabled="run.status === 'running'">重跑</el-button>
-        <el-button :icon="Back" @click="$router.push({ name: 'runs' })">返回</el-button>
+        <el-button :icon="Back" @click="goBack">返回</el-button>
       </div>
     </div>
 
@@ -109,6 +109,20 @@ const route = useRoute()
 const router = useRouter()
 const runId = route.params.runId
 
+// 工作区内（/projects/:id/runs/:runId）为项目作用域
+const scopedProjectId = route.params.id || null
+const scoped = !!scopedProjectId
+
+function detailRoute(id) {
+  return scoped
+    ? { name: 'project-run-detail', params: { id: scopedProjectId, runId: id } }
+    : { name: 'run-detail', params: { runId: id } }
+}
+function goBack() {
+  if (scoped) router.push({ name: 'project-runs', params: { id: scopedProjectId } })
+  else router.push({ name: 'runs' })
+}
+
 const loading = ref(false)
 const run = ref({})
 const lines = ref([])
@@ -182,7 +196,7 @@ async function doRerun() {
   try {
     const { data } = await api.post(`/runs/${runId}/rerun`)
     ElMessage.success(`已发起重跑 #${data.id}`)
-    router.push({ name: 'run-detail', params: { runId: data.id } })
+    router.push(detailRoute(data.id))
     setTimeout(() => router.go(0), 50)
   } catch {
     /* handled globally */

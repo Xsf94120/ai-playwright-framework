@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="page-header">
+    <div v-if="!scoped" class="page-header">
       <div>
         <p class="kicker">EXECUTIONS</p>
         <h2 class="page-title">执行记录</h2>
@@ -8,8 +8,12 @@
       </div>
       <div class="flex gap-10">
         <el-button :icon="Refresh" @click="loadRuns">刷新</el-button>
-        <el-button type="primary" :icon="VideoPlay" @click="openRun">运行测试</el-button>
+        <el-button type="primary" :icon="VideoPlay" @click="runVisible = true">运行测试</el-button>
       </div>
+    </div>
+
+    <div v-else class="scoped-head">
+      <el-button :icon="Refresh" size="small" @click="loadRuns">刷新</el-button>
     </div>
 
     <!-- Summary bar -->
@@ -42,7 +46,14 @@
         <el-option label="测试运行" value="run" />
         <el-option label="AI 生成" value="generate" />
       </el-select>
-      <el-select v-model="filters.project_id" placeholder="全部项目" clearable style="width: 170px" @change="loadRuns">
+      <el-select
+        v-if="!scoped"
+        v-model="filters.project_id"
+        placeholder="全部项目"
+        clearable
+        style="width: 170px"
+        @change="loadRuns"
+      >
         <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
       </el-select>
       <span class="toolbar-count mono">{{ runs.length }} 条记录</span>
@@ -60,7 +71,7 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="项目" width="120">
+        <el-table-column v-if="!scoped" label="项目" width="120">
           <template #default="{ row }"><span class="mono proj-key">{{ row.project_key }}</span></template>
         </el-table-column>
         <el-table-column label="用例集" min-width="150">
@@ -93,51 +104,17 @@
         </el-table-column>
         <template #empty>
           <div class="empty-mini">
-            {{ hasFilters ? '没有符合条件的记录' : '还没有执行记录，点击右上角「运行测试」开始第一次执行' }}
+            {{ hasFilters ? '没有符合条件的记录' : '还没有执行记录，点击「运行测试」开始第一次执行' }}
           </div>
         </template>
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" title="运行测试" width="540">
-      <el-form :model="runForm" label-width="92px" label-position="top">
-        <div class="form-grid">
-          <el-form-item label="项目">
-            <el-select v-model="runForm.project_id" style="width: 100%" @change="onProjectChange">
-              <el-option v-for="p in projects" :key="p.id" :label="`${p.name} (${p.key})`" :value="p.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="用例集">
-            <el-select v-model="runForm.suite_name" clearable placeholder="留空运行全部" style="width: 100%">
-              <el-option v-for="s in suites" :key="s.id" :label="s.name" :value="s.name" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="环境">
-            <el-select v-model="runForm.env" style="width: 100%">
-              <el-option v-for="e in envOptions" :key="e" :label="e" :value="e" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="浏览器">
-            <el-select v-model="runForm.browser" style="width: 100%">
-              <el-option label="chromium" value="chromium" />
-              <el-option label="firefox" value="firefox" />
-              <el-option label="webkit" value="webkit" />
-            </el-select>
-          </el-form-item>
-        </div>
-        <el-form-item label="AI 定位模式">
-          <el-radio-group v-model="runForm.ai_mode">
-            <el-radio-button value="strict">strict 严格</el-radio-button>
-            <el-radio-button value="assist">assist 辅助</el-radio-button>
-            <el-radio-button value="off">off 关闭</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitRun">开始运行</el-button>
-      </template>
-    </el-dialog>
+    <RunDialog
+      v-model="runVisible"
+      :preset-project-id="scoped ? scopedProjectId : null"
+      :lock-project="scoped"
+    />
   </div>
 </template>
 
@@ -147,16 +124,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { VideoPlay, Refresh, RefreshRight, Search } from '@element-plus/icons-vue'
 import api from '../api/client'
+import RunDialog from '../components/RunDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 
+// 工作区内（/projects/:id/runs）为项目作用域模式
+const scopedProjectId = computed(() => route.params.id || null)
+const scoped = computed(() => !!scopedProjectId.value)
+
 const runs = ref([])
 const projects = ref([])
-const suites = ref([])
 const loading = ref(false)
-const submitting = ref(false)
-const dialogVisible = ref(false)
+const runVisible = ref(false)
 
 const filters = reactive({
   status: '',
@@ -167,22 +147,9 @@ const filters = reactive({
 
 const counts = reactive({ all: 0, passed: 0, failed: 0, running: 0 })
 
-const runForm = reactive({
-  project_id: null,
-  suite_name: '',
-  env: 'prod',
-  ai_mode: 'strict',
-  browser: 'chromium',
-})
-
 const hasFilters = computed(
-  () => filters.status || filters.kind || filters.project_id || filters.q
+  () => filters.status || filters.kind || (!scoped.value && filters.project_id) || filters.q
 )
-
-const envOptions = computed(() => {
-  const p = projects.value.find((x) => x.id === runForm.project_id)
-  return p && p.environments.length ? p.environments.map((e) => e.name) : ['prod']
-})
 
 function statusTone(s) {
   return { passed: 'ok', failed: 'danger', running: 'warn', pending: 'neutral' }[s] || 'neutral'
@@ -204,17 +171,21 @@ function setStatus(s) {
   loadRuns()
 }
 
+function buildParams(includeStatus) {
+  const params = {}
+  if (includeStatus && filters.status) params.status = filters.status
+  if (filters.kind) params.kind = filters.kind
+  if (scoped.value) params.project_id = scopedProjectId.value
+  else if (filters.project_id) params.project_id = filters.project_id
+  if (filters.q) params.q = filters.q
+  return params
+}
+
 async function loadRuns() {
   loading.value = true
   try {
-    const params = {}
-    if (filters.status) params.status = filters.status
-    if (filters.kind) params.kind = filters.kind
-    if (filters.project_id) params.project_id = filters.project_id
-    if (filters.q) params.q = filters.q
-    const { data } = await api.get('/runs', { params })
+    const { data } = await api.get('/runs', { params: buildParams(true) })
     runs.value = data
-    // Refresh counts from an unfiltered-by-status snapshot.
     await loadCounts()
   } finally {
     loading.value = false
@@ -222,11 +193,7 @@ async function loadRuns() {
 }
 
 async function loadCounts() {
-  const params = {}
-  if (filters.kind) params.kind = filters.kind
-  if (filters.project_id) params.project_id = filters.project_id
-  if (filters.q) params.q = filters.q
-  const { data } = await api.get('/runs', { params })
+  const { data } = await api.get('/runs', { params: buildParams(false) })
   counts.all = data.length
   counts.passed = data.filter((r) => r.status === 'passed').length
   counts.failed = data.filter((r) => r.status === 'failed').length
@@ -234,61 +201,29 @@ async function loadCounts() {
 }
 
 async function loadProjects() {
+  if (scoped.value) return
   const { data } = await api.get('/projects')
   projects.value = data
 }
 
-async function loadSuites(projectId) {
-  if (!projectId) {
-    suites.value = []
-    return
-  }
-  const { data } = await api.get(`/projects/${projectId}/suites`)
-  suites.value = data
-}
-
-function onProjectChange(id) {
-  runForm.suite_name = ''
-  runForm.env = 'prod'
-  loadSuites(id)
-}
-
-async function openRun() {
-  await loadProjects()
-  const preset = filters.project_id || projects.value[0]?.id
-  runForm.project_id = preset || null
-  runForm.suite_name = route.query.suite || ''
-  if (preset) await loadSuites(preset)
-  dialogVisible.value = true
-}
-
-async function submitRun() {
-  if (!runForm.project_id) {
-    ElMessage.warning('请选择项目')
-    return
-  }
-  submitting.value = true
-  try {
-    const { data } = await api.post('/runs', { ...runForm })
-    dialogVisible.value = false
-    router.push({ name: 'run-detail', params: { runId: data.id } })
-  } finally {
-    submitting.value = false
-  }
+function detailRoute(id) {
+  return scoped.value
+    ? { name: 'project-run-detail', params: { id: scopedProjectId.value, runId: id } }
+    : { name: 'run-detail', params: { runId: id } }
 }
 
 async function rerun(row) {
   try {
     const { data } = await api.post(`/runs/${row.id}/rerun`)
     ElMessage.success(`已发起重跑 #${data.id}`)
-    router.push({ name: 'run-detail', params: { runId: data.id } })
+    router.push(detailRoute(data.id))
   } catch {
     /* handled globally */
   }
 }
 
 function goDetail(row) {
-  router.push({ name: 'run-detail', params: { runId: row.id } })
+  router.push(detailRoute(row.id))
 }
 
 onMounted(async () => {
@@ -297,6 +232,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.scoped-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
 .sum-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -405,11 +345,5 @@ onMounted(async () => {
   font-size: 13px;
   padding: 34px 0;
   text-align: center;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 16px;
 }
 </style>
