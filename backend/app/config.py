@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
-# Repo root = parent of the `backend` directory.
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# `backend/` is now the self-contained service root: it holds both the FastAPI
+# app (`app/`) and the fully integrated engine package (`ai_playwright/`).
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
-# All platform-managed runtime artifacts live under .platform (gitignored).
-DATA_DIR = REPO_ROOT / ".platform"
+# The engine package lives inside the backend service.
+ENGINE_ROOT = BACKEND_ROOT
+ENGINE_PACKAGE = BACKEND_ROOT / "ai_playwright"
+ENGINE_TEMPLATES = ENGINE_PACKAGE / "templates"
+
+# Backwards-compatible alias used across services/seed.
+REPO_ROOT = BACKEND_ROOT
+
+# All platform-managed runtime artifacts live under backend/.platform (gitignored).
+DATA_DIR = BACKEND_ROOT / ".platform"
 RUNS_DIR = DATA_DIR / "runs"
 DB_PATH = DATA_DIR / "platform.db"
 
@@ -22,6 +32,4 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24 * 7
 
 # Python interpreter used to launch the engine subprocess.
-import sys  # noqa: E402
-
 PYTHON_BIN = sys.executable or "python"

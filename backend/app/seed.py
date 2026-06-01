@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from sqlalchemy.orm import Session
 
-from app.config import REPO_ROOT
+from app.config import ENGINE_TEMPLATES
 from app.models import AIConfig, Environment, LLMConfig, Project, Suite, User
 from app.security import hash_password
 
@@ -15,7 +13,7 @@ ENV_NAMES = ["dev", "test", "stage", "prod"]
 
 
 def _read_template(*parts: str) -> str:
-    path = Path(REPO_ROOT, "ai_playwright", "templates", *parts)
+    path = ENGINE_TEMPLATES.joinpath(*parts)
     try:
         return path.read_text(encoding="utf-8")
     except OSError:

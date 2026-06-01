@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from app.config import PYTHON_BIN, REPO_ROOT, RUNS_DIR
+from app.config import ENGINE_ROOT, PYTHON_BIN, RUNS_DIR
 from app.db import SessionLocal
 from app.models import Project, Run, RunLog, Suite
 from app.services.materializer import LAYER_FIELDS, materialize_project
@@ -139,9 +139,9 @@ async def execute_run(run_id: int) -> None:
         sub_env.update(env_vars)
         existing_pythonpath = sub_env.get("PYTHONPATH", "")
         sub_env["PYTHONPATH"] = (
-            f"{REPO_ROOT}{os.pathsep}{existing_pythonpath}"
+            f"{ENGINE_ROOT}{os.pathsep}{existing_pythonpath}"
             if existing_pythonpath
-            else str(REPO_ROOT)
+            else str(ENGINE_ROOT)
         )
         sub_env["PYTHONUNBUFFERED"] = "1"
         sub_env["PYTHONIOENCODING"] = "utf-8"

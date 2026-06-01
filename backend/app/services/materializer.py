@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy.orm import Session
 
-from app.config import REPO_ROOT
+from app.config import ENGINE_TEMPLATES
 from app.models import AIConfig, LLMConfig, Project, Suite
 
 # Mapping of Suite column -> engine layer directory.
@@ -20,7 +20,7 @@ LAYER_FIELDS = {
 
 
 def _default_ai_config_text() -> str:
-    path = Path(REPO_ROOT, "ai_playwright", "templates", "config", "ai_config.yaml")
+    path = ENGINE_TEMPLATES / "config" / "ai_config.yaml"
     try:
         return path.read_text(encoding="utf-8")
     except OSError:

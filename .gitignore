@@ -22,16 +22,16 @@ __pycache__/
 /config/storage_state.json
 
 # Test case data policy: keep demo cases in Git, ignore project-specific data.
-/test_data/*
-!/test_data/demo/
-!/test_data/demo/**
+/backend/test_data/*
+!/backend/test_data/demo/
+!/backend/test_data/demo/**
 **/.DS_Store
 
 # Local archives and imported bundles
 *.zip
 
-# Platform runtime data (SQLite DB + per-run workspaces)
-/.platform/
+# Platform runtime data (SQLite DB + per-run workspaces) — now under backend/
+/backend/.platform/
 # Service dependency envs
 /backend/.venv/
 /frontend/node_modules/
