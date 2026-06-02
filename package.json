@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "AI Playwright 测试平台 — Vue 前端 + FastAPI 后端（内嵌核心引擎）",
   "scripts": {
+    "setup": "bash scripts/setup.sh",
     "dev": "concurrently -k -n api,web -c cyan,green \"pnpm run dev:api\" \"pnpm run dev:web\"",
     "dev:api": "cd backend && .venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload",
     "dev:web": "cd frontend && pnpm dev",
