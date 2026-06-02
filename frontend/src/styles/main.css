@@ -1,0 +1,364 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---- Signal accent (amber / industrial) ---- */
+  --brand: #e8590c;
+  --brand-strong: #d9480f;
+  --brand-soft: #fff1e8;
+  --brand-border: #ffd8bf;
+
+  /* ---- Warm neutrals (paper + ink) ---- */
+  --ink: #1c1917;
+  --ink-soft: #6b655e;
+  --ink-faint: #9c958c;
+  --bg: #f4f2ed;
+  --panel: #ffffff;
+  --panel-alt: #faf8f4;
+  --panel-tint: #f6f3ee;
+  --border: #e6e1d8;
+  --border-strong: #d8d2c6;
+  --line: #efeae1;
+
+  /* ---- Console (near-black warm) ---- */
+  --void: #14110e;
+  --void-soft: #1f1a15;
+  --void-border: #322b23;
+  --void-text: #a39a8d;
+  --void-text-strong: #f0ebe2;
+
+  /* ---- Status ---- */
+  --ok: #2f9e44;
+  --ok-soft: #e9f7ec;
+  --ok-border: #b6e3c0;
+  --danger: #e03131;
+  --danger-soft: #fdecec;
+  --danger-border: #f7c3c3;
+  --warn: #f08c00;
+  --warn-soft: #fff4e0;
+  --warn-border: #ffdfa3;
+  --info: #1971c2;
+  --info-soft: #e7f1fb;
+  --info-border: #b8d8f3;
+
+  --radius: 7px;
+  --radius-sm: 5px;
+  --shadow-sm: 0 1px 0 rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 6px 22px -10px rgba(28, 25, 23, 0.22);
+
+  /* Element Plus overrides */
+  --el-color-primary: #e8590c;
+  --el-color-primary-light-3: #ee7d40;
+  --el-color-primary-light-5: #f3a173;
+  --el-color-primary-light-7: #f8c5a6;
+  --el-color-primary-light-8: #fbd8c0;
+  --el-color-primary-light-9: #fff1e8;
+  --el-color-primary-dark-2: #d9480f;
+  --el-border-radius-base: 6px;
+  --el-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --el-text-color-primary: #1c1917;
+  --el-border-color: #e6e1d8;
+  --el-border-color-light: #efeae1;
+  --el-fill-color-blank: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+/* ---------- Page primitives ---------- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-subtitle {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 5px 0 0;
+}
+
+/* Mono micro-label — a defining detail of the system */
+.kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-flush {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-alt);
+}
+
+.section-title {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* Decorative accent tick before titles */
+.tick::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  background: var(--brand);
+  border-radius: 2px;
+  margin-right: 2px;
+}
+
+/* ---------- Status badge ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge.ok {
+  color: #237a33;
+  background: var(--ok-soft);
+  border-color: var(--ok-border);
+}
+.badge.danger {
+  color: #c92a2a;
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+.badge.warn {
+  color: #b86a00;
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
+}
+.badge.info {
+  color: #1862ab;
+  background: var(--info-soft);
+  border-color: var(--info-border);
+}
+.badge.neutral {
+  color: var(--ink-soft);
+  background: var(--panel-tint);
+  border-color: var(--border);
+}
+.badge.brand {
+  color: var(--brand-strong);
+  background: var(--brand-soft);
+  border-color: var(--brand-border);
+}
+
+.badge.live .dot {
+  animation: pulse 1.3s infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- Log console ---------- */
+.log-console {
+  background: var(--void);
+  color: #cfc6b8;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow: auto;
+  border: 1px solid var(--void-border);
+}
+
+.log-console .log-line {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-console .log-platform {
+  color: var(--brand);
+}
+.log-console .log-pass {
+  color: #69db7c;
+}
+.log-console .log-fail {
+  color: #ff8787;
+}
+
+.log-console::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.log-console::-webkit-scrollbar-thumb {
+  background: #3a322a;
+  border-radius: 6px;
+}
+
+/* ---------- Layout utils ---------- */
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.items-center {
+  align-items: center;
+}
+.gap-6 {
+  gap: 6px;
+}
+.gap-8 {
+  gap: 8px;
+}
+.gap-10 {
+  gap: 10px;
+}
+.gap-12 {
+  gap: 12px;
+}
+.gap-16 {
+  gap: 16px;
+}
+
+/* ---------- Element Plus refinements ---------- */
+.el-button {
+  font-weight: 550;
+}
+.el-button--primary {
+  --el-button-bg-color: var(--brand);
+  --el-button-border-color: var(--brand);
+  --el-button-hover-bg-color: var(--brand-strong);
+  --el-button-hover-border-color: var(--brand-strong);
+}
+.el-table th.el-table__cell {
+  background: var(--panel-alt) !important;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+.el-table {
+  --el-table-border-color: var(--line);
+  --el-table-row-hover-bg-color: var(--panel-tint);
+  font-size: 13px;
+}
+.el-card,
+.el-dialog {
+  border-radius: var(--radius) !important;
+}
+.el-dialog__header {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+}
+.el-tabs__item {
+  font-weight: 550;
+}
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: var(--radius-sm);
+}

@@ -1,0 +1,51 @@
+[project]
+name = "ai-playwright-platform-backend"
+version = "0.1.0"
+description = "FastAPI backend that embeds the AI Playwright automation engine and exposes a full management platform."
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi[standard]>=0.128.1",
+  "sqlalchemy>=2.0.36",
+  "pyjwt>=2.10.1",
+  "pyyaml>=6.0.2",
+  "ruamel-yaml>=0.18.10",
+  "python-dotenv>=1.0.1",
+  "pydantic>=2.10.4",
+  "pydantic-settings>=2.7.1",
+  "requests>=2.32.3",
+  "rich>=13.9.4",
+  "loguru>=0.7.3",
+  "typer>=0.15.1",
+  "faker>=37.0.0",
+  "jsonpath-ng>=1.7.0",
+  "pytest>=8.3.4",
+  "pytest-playwright>=0.7.0",
+  "pytest-base-url>=2.1.0",
+  "pytest-dependency>=0.6.0",
+  "pytest-check>=2.5.0",
+  "pytest-reportlog>=0.4.0",
+  "allure-pytest>=2.13.5",
+  "allure-python-commons>=2.13.5",
+  "playwright>=1.58.0"
+]
+
+# The engine ships its CLI entry points so the platform (and power users) can
+# invoke the fully embedded engine directly from this package.
+[project.scripts]
+gen = "ai_playwright.cli.generate_case:cli"
+run_case = "ai_playwright.cli.run_case:cli"
+ai-playwright-init = "ai_playwright.cli.init_project:cli"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "ai_playwright"]
+
+[tool.setuptools.package-data]
+ai_playwright = ["templates/**/*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
